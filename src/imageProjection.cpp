@@ -302,6 +302,7 @@ public:
         return true;
     }
 
+
     void imuDeskewInfo()
     {
         cloudInfo.imuAvailable = false;
@@ -359,6 +360,7 @@ public:
             return;
 
         cloudInfo.imuAvailable = true;
+
     }
 
     void odomDeskewInfo()
@@ -515,6 +517,19 @@ public:
         newPoint.z = transBt(2,0) * point->x + transBt(2,1) * point->y + transBt(2,2) * point->z + transBt(2,3);
         newPoint.intensity = point->intensity;
 
+
+
+        //MEMS Rotation insertion:
+        //float Sensor_rotXCur,Sensor_rotYCur,Sensor_rotZCur;
+
+        //Sensor_rotXCur=0;
+        //Sensor_rotYCur=0;
+        //Sensor_rotZCur=0;
+
+
+
+
+        //Eigen::Affine3f SensorRotation = pcl::getTransformation(0.0, 0.0, 0.0, 0.0, rotYCur, rotZCur);
         return newPoint;
     }
 
