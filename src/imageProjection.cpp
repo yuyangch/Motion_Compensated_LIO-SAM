@@ -41,9 +41,11 @@ private:
 
     std::mutex imuLock;
     std::mutex odoLock;
+    std::mutex rotLock;
 
     ros::Subscriber subLaserCloud;
     ros::Publisher  pubLaserCloud;
+
     
     ros::Publisher pubExtractedCloud;
     ros::Publisher pubLaserCloudInfo;
@@ -54,6 +56,9 @@ private:
     ros::Subscriber subOdom;
     std::deque<nav_msgs::Odometry> odomQueue;
 
+    ros::Subscriber subSensorRotation;
+    std::deque<geometry_msgs::Vector3Stamped> rotQueue;
+
     std::deque<sensor_msgs::PointCloud2> cloudQueue;
     sensor_msgs::PointCloud2 currentCloudMsg;
 
@@ -62,9 +67,17 @@ private:
     double *imuRotY = new double[queueLength];
     double *imuRotZ = new double[queueLength];
 
+
+
     int imuPointerCur;
     bool firstPointFlag;
     Eigen::Affine3f transStartInverse;
+
+    double *sensorRotTime = new double[queueLength];
+    double *sensorAzimuth= new double[queueLength];
+    double *sensorElevation= new double[queueLength];
+    int sensorRotationPointerCur;
+
 
     pcl::PointCloud<PointXYZIRT>::Ptr laserCloudIn;
     pcl::PointCloud<OusterPointXYZIRT>::Ptr tmpOusterCloudIn;
@@ -94,6 +107,7 @@ public:
         subImu        = nh.subscribe<sensor_msgs::Imu>(imuTopic, 2000, &ImageProjection::imuHandler, this, ros::TransportHints().tcpNoDelay());
         subOdom       = nh.subscribe<nav_msgs::Odometry>(odomTopic+"_incremental", 2000, &ImageProjection::odometryHandler, this, ros::TransportHints().tcpNoDelay());
         subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(pointCloudTopic, 5, &ImageProjection::cloudHandler, this, ros::TransportHints().tcpNoDelay());
+        subSensorRotation=nh.subscribe<geometry_msgs::Vector3Stamped>("/MEMS_rotation", 1, &ImageProjection::sensorRotationHandler, this, ros::TransportHints().tcpNoDelay())
 
         pubExtractedCloud = nh.advertise<sensor_msgs::PointCloud2> ("lio_sam/deskew/cloud_deskewed", 1);
         pubLaserCloudInfo = nh.advertise<lio_sam::cloud_info> ("lio_sam/deskew/cloud_info", 1);
@@ -139,6 +153,11 @@ public:
             imuRotX[i] = 0;
             imuRotY[i] = 0;
             imuRotZ[i] = 0;
+
+
+            sensorRotTime[i]=0;
+            sensorAzimuth[i]=0;
+            sensorElevation[i]=0;
         }
 
         columnIdnCountVec.assign(N_SCAN, 0);
@@ -185,6 +204,7 @@ public:
         if (!deskewInfo())
             return;
 
+
         projectPointCloud();
 
         cloudExtraction();
@@ -192,6 +212,12 @@ public:
         publishClouds();
 
         resetParameters();
+    }
+    void sensorRotationHandler(const geometry_msgs::Vector3Stamped& sensorRotationMsg)
+    {
+
+        std::lock_guard<std::mutex> lock3(rotLock);
+        rotQueue.push_back(*sensorRotationMsg);
     }
 
     bool cachePointCloud(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
@@ -287,7 +313,7 @@ public:
     {
         std::lock_guard<std::mutex> lock1(imuLock);
         std::lock_guard<std::mutex> lock2(odoLock);
-
+        std::lock_guard<std::mutex> lock3(rotLock);
         // make sure IMU data available for the scan
         if (imuQueue.empty() || imuQueue.front().header.stamp.toSec() > timeScanCur || imuQueue.back().header.stamp.toSec() < timeScanEnd)
         {
@@ -298,6 +324,8 @@ public:
         imuDeskewInfo();
 
         odomDeskewInfo();
+
+        sensorRotationDeskewInfo();
 
         return true;
     }
@@ -445,6 +473,62 @@ public:
         odomDeskewFlag = true;
     }
 
+    void sensorRotationDeskewInfo()
+    {
+
+        while (!rotQueue.empty())
+        {
+            if (rotQueue.front().header.stamp.toSec() < timeScanCur - 0.01) 
+                rotQueue.pop_front();
+            else
+                break;
+        }
+        if (rotQueue.empty()){
+            return;
+        }
+        sensorRotationPointerCur = 0;
+
+        for (int i = 0; i < (int)rotQueue.size(); ++i)
+        {
+            geometry_msgs::Vector3Stamped thisRotMsg = rotQueue[i];
+            double currentRotTime = thisRotMsg.header.stamp.toSec();
+
+            // get roll, pitch, and yaw estimation for this scan
+           // if (currentRotTime <= timeScanCur)
+            //    imuRPY2rosRPY(&thisImuMsg, &cloudInfo.imuRollInit, &cloudInfo.imuPitchInit, &cloudInfo.imuYawInit);
+
+            if (currentRotTime > timeScanEnd + 0.01)
+                break;
+            /*
+            if (imuPointerCur == 0){
+                imuRotX[0] = 0;
+                imuRotY[0] = 0;
+                imuRotZ[0] = 0;
+                imuTime[0] = currentImuTime;
+                ++imuPointerCur;
+                continue;
+            }*/
+
+            // get angular velocity
+            /*
+            double angular_x, angular_y, angular_z;
+            imuAngular2rosAngular(&thisImuMsg, &angular_x, &angular_y, &angular_z);
+            */
+            // record rotation
+            //double timeDiff = currentImuTime - imuTime[imuPointerCur-1];
+            //imuRotX[imuPointerCur] = imuRotX[imuPointerCur-1] + angular_x * timeDiff;
+            sensorAzimuth[sensorRotationPointerCur] = thisRotMsg.vector.z;
+            sensorElevation[sensorRotationPointerCur] = thisRotMsg.vector.y;
+            sensorRotTime[sensorRotationPointerCur] = currentRotTime;
+            ++sensorRotationPointerCur;
+        }
+
+        --sensorRotationPointerCur;
+
+
+
+    }
+
     void findRotation(double pointTime, float *rotXCur, float *rotYCur, float *rotZCur)
     {
         *rotXCur = 0; *rotYCur = 0; *rotZCur = 0;
@@ -471,6 +555,22 @@ public:
             *rotZCur = imuRotZ[imuPointerFront] * ratioFront + imuRotZ[imuPointerBack] * ratioBack;
         }
     }
+
+    void findSensorRotation(double pointTime,  float *rotElevationCur, float *rotAzimuthCur){
+        *rotElevationCur = 0; *rotAzimuthCur = 0; 
+
+        int rotPointerFront = 0;
+        while (rotPointerFront < sensorRotationPointerCur)
+        {   
+            if (pointTime < sensorRotTime[rotPointerFront])
+                break;
+            ++rotPointerFront;
+        }
+        *rotElevationCur = sensorElevation[rotPointerFront];
+        *rotAzimuthCur = sensorAzimuth[rotPointerFront];        
+        //no interpolations yet, needs to add
+    }
+
 
     void findPosition(double relTime, float *posXCur, float *posYCur, float *posZCur)
     {
@@ -501,6 +601,8 @@ public:
         float posXCur, posYCur, posZCur;
         findPosition(relTime, &posXCur, &posYCur, &posZCur);
 
+
+
         if (firstPointFlag == true)
         {
             transStartInverse = (pcl::getTransformation(posXCur, posYCur, posZCur, rotXCur, rotYCur, rotZCur)).inverse();
@@ -518,18 +620,24 @@ public:
         newPoint.intensity = point->intensity;
 
 
+        if(false){
 
+        PointType newSensorRotatedPoint;
         //MEMS Rotation insertion:
-        //float Sensor_rotXCur,Sensor_rotYCur,Sensor_rotZCur;
+        float rotElevationCur,rotAzimuthCur
+        //float *rotElevationCur, float *rotAzimuthCur
+        findSensorRotation(pointTime,&rotElevationCur,&rotAzimuthCur)
+        Eigen::Affine3f SensorRotation = pcl::getTransformation(0.0, 0.0, 0.0, 0.0, rotAzimuthCur, rotElevationCur);
+        newSensorRotatedPoint.x = SensorRotation(0,0) * newPoint.x + SensorRotation(0,1) * newPoint.y + SensorRotation(0,2) * newPoint.z + SensorRotation(0,3);
+        newSensorRotatedPoint.y = SensorRotation(1,0) * newPoint.x + SensorRotation(1,1) * newPoint.y + SensorRotation(1,2) * newPoint.z + SensorRotation(1,3);
+        newSensorRotatedPoint.z = SensorRotation(2,0) * newPoint.x + SensorRotation(2,1) * newPoint.y + SensorRotation(2,2) * newPoint.z + SensorRotation(2,3);
 
-        //Sensor_rotXCur=0;
-        //Sensor_rotYCur=0;
-        //Sensor_rotZCur=0;
+        return newSensorRotatedPoint;
+        }
 
 
 
-
-        //Eigen::Affine3f SensorRotation = pcl::getTransformation(0.0, 0.0, 0.0, 0.0, rotYCur, rotZCur);
+        
         return newPoint;
     }
 

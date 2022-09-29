@@ -32,8 +32,8 @@ class Nodo(object):
         count=0
         while not rospy.is_shutdown():
 	        data=Vector3()
-	        data.x=0.0
-	        data.y=0.0
+	        data.x=0.5
+	        data.y=0.5
 
 	        #hello_str = "hello world %s" % rospy.get_time()
 	        #rospy.loginfo(hello_str)
