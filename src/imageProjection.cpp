@@ -107,7 +107,7 @@ public:
         subImu        = nh.subscribe<sensor_msgs::Imu>(imuTopic, 2000, &ImageProjection::imuHandler, this, ros::TransportHints().tcpNoDelay());
         subOdom       = nh.subscribe<nav_msgs::Odometry>(odomTopic+"_incremental", 2000, &ImageProjection::odometryHandler, this, ros::TransportHints().tcpNoDelay());
         subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(pointCloudTopic, 5, &ImageProjection::cloudHandler, this, ros::TransportHints().tcpNoDelay());
-        subSensorRotation=nh.subscribe<geometry_msgs::Vector3Stamped>("/MEMS_rotation", 1, &ImageProjection::sensorRotationHandler, this, ros::TransportHints().tcpNoDelay())
+        subSensorRotation=nh.subscribe<geometry_msgs::Vector3Stamped>("/MEMS_rotation", 1, &ImageProjection::sensorRotationHandler, this, ros::TransportHints().tcpNoDelay());
 
         pubExtractedCloud = nh.advertise<sensor_msgs::PointCloud2> ("lio_sam/deskew/cloud_deskewed", 1);
         pubLaserCloudInfo = nh.advertise<lio_sam::cloud_info> ("lio_sam/deskew/cloud_info", 1);
@@ -213,7 +213,7 @@ public:
 
         resetParameters();
     }
-    void sensorRotationHandler(const geometry_msgs::Vector3Stamped& sensorRotationMsg)
+    void sensorRotationHandler(const geometry_msgs::Vector3Stamped::ConstPtr& sensorRotationMsg)
     {
 
         std::lock_guard<std::mutex> lock3(rotLock);
@@ -624,9 +624,9 @@ public:
 
         PointType newSensorRotatedPoint;
         //MEMS Rotation insertion:
-        float rotElevationCur,rotAzimuthCur
+        float rotElevationCur,rotAzimuthCur;
         //float *rotElevationCur, float *rotAzimuthCur
-        findSensorRotation(pointTime,&rotElevationCur,&rotAzimuthCur)
+        findSensorRotation(pointTime,&rotElevationCur,&rotAzimuthCur);
         Eigen::Affine3f SensorRotation = pcl::getTransformation(0.0, 0.0, 0.0, 0.0, rotAzimuthCur, rotElevationCur);
         newSensorRotatedPoint.x = SensorRotation(0,0) * newPoint.x + SensorRotation(0,1) * newPoint.y + SensorRotation(0,2) * newPoint.z + SensorRotation(0,3);
         newSensorRotatedPoint.y = SensorRotation(1,0) * newPoint.x + SensorRotation(1,1) * newPoint.y + SensorRotation(1,2) * newPoint.z + SensorRotation(1,3);
