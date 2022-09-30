@@ -54,7 +54,7 @@
 #include <array>
 #include <thread>
 #include <mutex>
-
+#include <math.h>
 using namespace std;
 
 typedef pcl::PointXYZI PointType;
@@ -80,6 +80,8 @@ public:
     string baselinkFrame;
     string odometryFrame;
     string mapFrame;
+
+    bool RotationCompensation;
 
     // GPS Settings
     bool useImuHeadingInitialization;
@@ -176,6 +178,9 @@ public:
 
         std::string sensorStr;
         nh.param<std::string>("lio_sam/sensor", sensorStr, "");
+
+        nh.param<bool>("sensor_rotation_compensation/RotationCompensation",RotationCompensation , false);
+
         if (sensorStr == "velodyne")
         {
             sensor = SensorType::VELODYNE;

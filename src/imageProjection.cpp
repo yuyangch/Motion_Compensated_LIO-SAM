@@ -619,15 +619,16 @@ public:
         newPoint.z = transBt(2,0) * point->x + transBt(2,1) * point->y + transBt(2,2) * point->z + transBt(2,3);
         newPoint.intensity = point->intensity;
 
-
-        if(false){
+        std::cout<<"/sensor_rotation_compensation/RotationCompensation "<<RotationCompensation<<std::endl;
+        if(RotationCompensation){
 
         PointType newSensorRotatedPoint;
         //MEMS Rotation insertion:
         float rotElevationCur,rotAzimuthCur;
         //float *rotElevationCur, float *rotAzimuthCur
         findSensorRotation(pointTime,&rotElevationCur,&rotAzimuthCur);
-        Eigen::Affine3f SensorRotation = pcl::getTransformation(0.0, 0.0, 0.0, 0.0, rotAzimuthCur, rotElevationCur);
+        std:cout<<"rotElevationCur rotAzimuthCur"<<rotElevationCur<<" "<<rotAzimuthCur<<std::endl;
+        Eigen::Affine3f SensorRotation = pcl::getTransformation(0.0, 0.0, 0.0, 0.0, rotElevationCur*M_PI/180.0, rotAzimuthCur*M_PI/180.0);
         newSensorRotatedPoint.x = SensorRotation(0,0) * newPoint.x + SensorRotation(0,1) * newPoint.y + SensorRotation(0,2) * newPoint.z + SensorRotation(0,3);
         newSensorRotatedPoint.y = SensorRotation(1,0) * newPoint.x + SensorRotation(1,1) * newPoint.y + SensorRotation(1,2) * newPoint.z + SensorRotation(1,3);
         newSensorRotatedPoint.z = SensorRotation(2,0) * newPoint.x + SensorRotation(2,1) * newPoint.y + SensorRotation(2,2) * newPoint.z + SensorRotation(2,3);

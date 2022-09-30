@@ -5,11 +5,12 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /links1
-        - /Odometry1
         - /Odometry1/Odom lidar1
         - /Odometry1/Odometry lidar incremental1
         - /Point Cloud1
         - /Feature Cloud1
+        - /Mapping1
+        - /Mapping1/Map (cloud)1
         - /Mapping1/Map (local)1
         - /Mapping1/Map (global)1
       Splitter Ratio: 0.5600000023841858
@@ -340,14 +341,14 @@ Visualization Manager:
         - Alpha: 0.30000001192092896
           Autocompute Intensity Bounds: false
           Autocompute Value Bounds:
-            Max Value: 7.4858574867248535
-            Min Value: -1.2309398651123047
+            Max Value: 32.50678253173828
+            Min Value: 7.5681610107421875
             Value: true
           Axis: Z
           Channel Name: intensity
           Class: rviz/PointCloud2
           Color: 255; 255; 255
-          Color Transformer: Intensity
+          Color Transformer: AxisColor
           Decay Time: 300
           Enabled: true
           Invert Rainbow: false
@@ -525,7 +526,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 97.43701171875
+      Distance: 199.19615173339844
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -541,9 +542,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.1253981590270996
+      Pitch: 0.5853981971740723
       Target Frame: base_link
-      Yaw: 3.3316705226898193
+      Yaw: 3.8516685962677
     Saved: ~
 Window Geometry:
   Displays:
