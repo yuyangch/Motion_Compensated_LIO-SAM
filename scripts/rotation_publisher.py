@@ -30,8 +30,8 @@ class Nodo(object):
         rate = rospy.Rate(10) # 10hz
         count=0
         while not rospy.is_shutdown():
-            azimuth=np.random.normal(0, 5)
-            elevation=np.random.normal(0, 5)
+            azimuth=np.random.normal(0, 3.0)
+            elevation=np.random.normal(0, 3.0)
             data=Vector3()            
             data.z=azimuth  #azimuth
             data.y=elevation  #elevation
