@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-plt.style.use('seaborn-whitegrid')
+#plt.style.use('seaborn-whitegrid')
 
 class Plotter(object):
 	def __init__(self):
@@ -20,13 +20,22 @@ class Plotter(object):
 			self.odom_error_rot.append(float(last_row[1].strip('"')))
 
 	def plot(self):
-		fig=plt.figure()
-		ax=plt.axes()
-		one=ax.plot(self.file_num_initials,self.odom_error_pos,label="Position Erorr(m)")
-		two=ax.plot(self.file_num_initials,self.odom_error_rotm,label="Yaw Erorr (degree)")
-		legend = plt.legend(handles=[one, two], loc = 4, fontsize = 'small', fancybox = True)
+		fig, ax1 = plt.subplots()
+
+		ax2 = ax1.twinx()
+		#fig=plt.figure()
+		#ax=plt.axes()
+		ax1.plot(self.file_num_initials,self.odom_error_pos,'b',label="Position Erorr(m)")
+		ax2.plot(self.file_num_initials,self.odom_error_rot,'r',label="Yaw Erorr (degree)")
+		ax1.legend( loc=2,fontsize = 'small', fancybox = True)
+		ax2.legend( loc=1,fontsize = 'small', fancybox = True)
 		plt.title("IMU Noise vs Odometry Error")
-		plt.show()
+		plt.xlabel("IMU Noise Factor")
+		#plt.ylabel("Position Error ()")
+		ax1.set_ylabel('Position Error (m)', color='b')
+		ax2.set_ylabel('Yaw Erorr (degree)', color='r')
+		plt.savefig('imu_noise_vs_odometry_error.pdf')
+		#plt.show()
 
 
 
