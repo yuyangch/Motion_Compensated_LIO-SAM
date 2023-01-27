@@ -8,6 +8,7 @@ from geometry_msgs.msg import Vector3
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Float32
 
+from scipy.spatial.transform import Rotation as R
 #std_msgs/Float32
 from copy import deepcopy
 import numpy as np
@@ -30,8 +31,8 @@ class Nodo(object):
         rate = rospy.Rate(10) # 10hz
         count=0
         while not rospy.is_shutdown():
-            azimuth=np.random.normal(0, 0.0)
-            elevation=np.random.normal(0, 0.0)
+            azimuth=np.random.normal(0, 3.0)
+            elevation=np.random.normal(0, 3.0)
             data=Vector3()            
             data.z=azimuth  #azimuth
             data.y=elevation  #elevation
